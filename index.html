@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Pipeline Explorer</title>
+  <style>
+    /* -------------------------------------------------------------
+       BASE & RESET STYLES
+       Clean, modern typography with a welcoming dark/slate aesthetic
+    ------------------------------------------------------------- */
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent: #a855f7;
+      --accent-hover: #9333ea;
+      --success: #34d399;
+      --animal-color: #f87171;   /* Red / Coral */
+      --tech-color: #38bdf8;     /* Cyan / Blue */
+      --finance-color: #34d399;  /* Emerald / Green */
+      --custom-color: #fbbf24;   /* Amber / Gold */
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at 15% 15%, #1e1e38 0%, var(--bg-color) 60%);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #38bdf8, #a855f7, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* -------------------------------------------------------------
+       CARD SECTIONS
+    ------------------------------------------------------------- */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s ease;
+    }
+
+    .section-card:hover {
+      border-color: #475569;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+    }
+
+    .step-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+    }
+
+    /* -------------------------------------------------------------
+       FORM ELEMENTS (TEXTAREAS, INPUTS, BUTTONS, SLIDERS)
+    ------------------------------------------------------------- */
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: #0b1329;
+      font-weight: 700;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .slider-container {
+      background: #0f172a;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slider-header span {
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .slider-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 10px;
+      border-radius: 6px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #334155;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* -------------------------------------------------------------
+       VOCABULARY PREVIEW PILLS & TOKEN CHIPS
+    ------------------------------------------------------------- */
+    .vocab-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-height: 130px;
+      overflow-y: auto;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      margin-top: 10px;
+    }
+
+    .vocab-pill {
+      font-size: 0.8rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #334155;
+      color: #e2e8f0;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .vocab-pill .freq {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--primary);
+    }
+
+    .vocab-pill.active {
+      border: 1px solid var(--primary);
+      background: rgba(56, 189, 248, 0.15);
+      color: #bae6fd;
+    }
+
+    .vocab-pill.dropped {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    .tokens-result-box {
+      margin-top: 18px;
+      padding: 18px;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    .tokens-summary {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tokens-summary .badge {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border: 1px solid var(--success);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    .chips-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 48px;
+      align-items: center;
+    }
+
+    .token-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 6px 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      animation: popIn 0.2s ease-out;
+    }
+
+    .token-chip.subword {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #2e1065, #0f172a);
+    }
+
+    .token-chip.single-char {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #451a03, #0f172a);
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .token-piece {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .token-id {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: monospace;
+    }
+
+    /* -------------------------------------------------------------
+       SECTION 2: 3D EMBEDDINGS CANVAS & TABLES
+    ------------------------------------------------------------- */
+    .table-container {
+      max-height: 190px;
+      overflow-y: auto;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: #0f172a;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    th {
+      background: #1e293b;
+      color: #cbd5e1;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+
+    td.num {
+      font-family: monospace;
+    }
+
+    .canvas-container {
+      position: relative;
+      background: #080d1a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow: hidden;
+      width: 100%;
+      height: 480px;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7);
+      margin-top: 16px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .canvas-overlay-hint {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      pointer-events: none;
+    }
+
+    .canvas-legend {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .extra-point-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .extra-point-row input {
+      flex: 1;
+    }
+
+    /* -------------------------------------------------------------
+       INFO CALLOUT
+    ------------------------------------------------------------- */
+    .info-callout {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 4px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 14px;
+    }
+
+    .info-callout strong {
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>LLM Pipeline Explorer</h1>
+      <p>An interactive educational visualizer showing how Large Language Models turn raw words into subword tokens and navigate 3D semantic embedding spaces.</p>
+    </header>
+
+    <!-- =========================================================
+         SECTION 1: TOKENIZER & VOCABULARY BUILDING
+         ========================================================= -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-badge">Section 1</span>
+        <h2>Subword Tokenizer: Vocabulary & Decomposition</h2>
+      </div>
+      <p class="section-desc">
+        LLMs cannot process full words infinitely; they build a vocabulary of the most frequent words and break rarer words down into subwords or single letters.
+      </p>
+
+      <div class="grid-2">
+        <!-- Training Corpus Input -->
+        <div>
+          <label for="trainingText">1. Training Sentences (Corpus):</label>
+          <textarea id="trainingText" rows="4">the cat sat on the mat
+the dog chased the cat
+cats and dogs are cute animals
+finance algorithms code python
+python code runs on computers</textarea>
+          <div class="control-row">
+            <button id="btnBuildVocab" class="btn">Build Vocabulary</button>
+          </div>
+        </div>
+
+        <!-- Vocab size slider & preview -->
+        <div>
+          <div class="slider-container">
+            <div class="slider-header">
+              <span>Top-N Words Kept in Vocab:</span>
+              <span id="sliderValDisplay" class="slider-value">8</span>
+            </div>
+            <input type="range" id="vocabSlider" min="1" max="20" value="8">
+            <small style="color: #64748b;">Adjust slider to keep only the top frequent words. Remaining words will be broken into pieces!</small>
+          </div>
+
+          <label style="margin-top: 12px;">Active Vocabulary (<span id="vocabCountText">0</span> words):</label>
+          <div id="vocabCloud" class="vocab-cloud">
+            <!-- Vocabulary pills rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tokenization Test Input -->
+      <div style="margin-top: 24px;">
+        <label for="testSentence">2. Enter a sentence to tokenize:</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="testSentence" value="the python cat codes and computes" style="flex: 1; min-width: 250px;">
+          <button id="btnTokenize" class="btn btn-accent">Tokenize Sentence</button>
+        </div>
+      </div>
+
+      <!-- Token Chips Result Box -->
+      <div class="tokens-result-box">
+        <div class="tokens-summary">
+          <span>Tokenization Output</span>
+          <span id="tokenStats" class="badge">0 words became 0 tokens</span>
+        </div>
+        <div id="tokenChipsContainer" class="chips-wrapper">
+          <!-- Token chips will appear here -->
+        </div>
+      </div>
+
+      <div class="info-callout">
+        <strong>How Subword Tokenization Works:</strong> When a word isn't in the top-N vocabulary, the tokenizer greedily searches for the longest piece present in the vocabulary. If no subword matches, it splits it into single individual characters.
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SECTION 2: EMBEDDINGS IN 3D
+         ========================================================= -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-badge">Section 2</span>
+        <h2>Semantic Embeddings in 3D Space</h2>
+      </div>
+      <p class="section-desc">
+        Words and sentences are converted into coordinates (vectors). Here, each word is mapped to 3 conceptual axes: 
+        <strong style="color: var(--animal-color)">X = Animal</strong>, 
+        <strong style="color: var(--tech-color)">Y = Technology</strong>, and 
+        <strong style="color: var(--finance-color)">Z = Finance</strong>.
+        Sentence vectors are calculated as the average of their word vectors.
+      </p>
+
+      <div class="grid-2">
+        <!-- Sentence List Input -->
+        <div>
+          <label for="sentenceList">1. Sentences to Plot (one per line):</label>
+          <textarea id="sentenceList" rows="6">cats and dogs are cute animals
+finance algorithms code python
+stocks and bank money invest
+the dog runs on the bank
+code computers python software</textarea>
+          <div class="control-row">
+            <button id="btnPlotSentences" class="btn">Update 3D Plot</button>
+          </div>
+        </div>
+
+        <!-- Semantic Dictionary Table -->
+        <div>
+          <label>2. Semantic Vector Dictionary (Hand-Made):</label>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Word</th>
+                  <th style="color: var(--animal-color)">Animal (X)</th>
+                  <th style="color: var(--tech-color)">Tech (Y)</th>
+                  <th style="color: var(--finance-color)">Money (Z)</th>
+                </tr>
+              </thead>
+              <tbody id="vectorTableBody">
+                <!-- Word vector rows inserted dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Custom Word/Sentence -->
+      <div style="margin-top: 20px;">
+        <label for="extraInput">3. Add your own word or sentence as an extra point:</label>
+        <div class="extra-point-row">
+          <input type="text" id="extraInput" placeholder="e.g. cute python bank or a new sentence...">
+          <button id="btnAddExtra" class="btn" style="background: #f59e0b; color: #1e1e38;">Add Extra Point</button>
+        </div>
+      </div>
+
+      <!-- 3D Canvas Box -->
+      <div class="canvas-container">
+        <div class="canvas-overlay-hint">
+          Click & drag to rotate 3D view | Scroll to zoom
+        </div>
+        <canvas id="plot3DCanvas"></canvas>
+        <div class="canvas-legend">
+          <div class="legend-item"><div class="legend-dot" style="background: var(--animal-color);"></div> Animal-heavy sentence</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--tech-color);"></div> Tech-heavy sentence</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--finance-color);"></div> Finance-heavy sentence</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--custom-color);"></div> User custom point</div>
+        </div>
+      </div>
+
+      <div class="info-callout">
+        <strong>Average Word Embedding:</strong> The position of a sentence in 3D space is:
+        <code>(Mean(X), Mean(Y), Mean(Z))</code>. Sentences with similar topics naturally cluster together!
+      </div>
+    </section>
+  </div>
+
+  <!-- =========================================================
+       JAVASCRIPT CODE
+       Fully commented for beginners & first-year students!
+       ========================================================= -->
+  <script>
+    /* =========================================================================
+       SECTION 1: TOKENIZER LOGIC
+       ========================================================================= */
+
+    // In-memory data store for word frequencies and vocabulary
+    let allWordCounts = [];       // Array of objects: [{ word: "the", count: 4 }, ...]
+    let activeVocabulary = [];    // Words currently in the top-N vocabulary list
+    let tokenToIdMap = {};        // Map: token string -> numerical ID integer
+    let nextTokenId = 1;          // Simple counter to assign IDs to new tokens
+
+    // Helper: Split text into lowercase alphanumeric words
+    function extractWords(text) {
+      // Matches sequences of letters/numbers; ignores punctuation
+      const matched = text.toLowerCase().match(/[a-z0-9]+/g);
+      return matched ? matched : [];
+    }
+
+    // Step 1: Count word frequency from training textarea
+    function buildVocabulary() {
+      const text = document.getElementById("trainingText").value;
+      const words = extractWords(text);
+
+      // Create a frequency map: { "the": 3, "cat": 2, ... }
+      const counts = {};
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        counts[w] = (counts[w] || 0) + 1;
+      }
+
+      // Convert the map to an array and sort descending by frequency
+      allWordCounts = Object.keys(counts).map(word => {
+        return { word: word, count: counts[word] };
+      });
+      allWordCounts.sort((a, b) => b.count - a.count);
+
+      // Update the range slider maximum to the total number of unique words
+      const slider = document.getElementById("vocabSlider");
+      const totalUnique = allWordCounts.length;
+      slider.max = Math.max(totalUnique, 1);
+      
+      // Default slider to current value or max if it was higher
+      if (parseInt(slider.value, 10) > totalUnique || parseInt(slider.value, 10) === 0) {
+        slider.value = Math.min(8, totalUnique);
+      }
+
+      updateVocabFromSlider();
+    }
+
+    // Step 2: Keep only top N words based on the slider value
+    function updateVocabFromSlider() {
+      const topN = parseInt(document.getElementById("vocabSlider").value, 10);
+      document.getElementById("sliderValDisplay").textContent = topN;
+
+      // Slice the first topN words
+      activeVocabulary = allWordCounts.slice(0, topN).map(item => item.word);
+
+      // Reset and build token-to-ID mapping
+      tokenToIdMap = {};
+      nextTokenId = 100; // Start token IDs at 100 for clean display
+
+      // Assign an ID to each word in vocabulary
+      activeVocabulary.forEach(word => {
+        tokenToIdMap[word] = nextTokenId++;
+      });
+
+      // Render the visual pills of vocabulary
+      renderVocabPills(topN);
+
+      // Re-tokenize the test input automatically when vocabulary changes
+      tokenizeSentence();
+    }
+
+    // Render vocabulary pills (active in green/blue, dropped with strikethrough)
+    function renderVocabPills(topN) {
+      const container = document.getElementById("vocabCloud");
+      container.innerHTML = "";
+      document.getElementById("vocabCountText").textContent = activeVocabulary.length;
+
+      allWordCounts.forEach((item, index) => {
+        const pill = document.createElement("div");
+        const isKept = index < topN;
+        pill.className = `vocab-pill ${isKept ? "active" : "dropped"}`;
+        pill.innerHTML = `<span>${item.word}</span> <span class="freq">${item.count}</span>`;
+        container.appendChild(pill);
+      });
+    }
+
+    // Subword Decomposition Algorithm:
+    // If word is in vocab -> keep as single token.
+    // If not -> greedily find the longest matching substring from vocab.
+    // If no matching substring -> take single character.
+    function decomposeWord(word) {
+      // 1. If the exact full word is already in the vocabulary
+      if (activeVocabulary.includes(word)) {
+        return [{ text: word, type: "word" }];
+      }
+
+      const pieces = [];
+      let remaining = word;
+
+      // 2. Break down the word piece by piece
+      while (remaining.length > 0) {
+        let longestMatch = "";
+
+        // Check vocabulary for the longest substring starting at index 0
+        for (let i = 0; i < activeVocabulary.length; i++) {
+          const vocabWord = activeVocabulary[i];
+          if (remaining.startsWith(vocabWord)) {
+            if (vocabWord.length > longestMatch.length) {
+              longestMatch = vocabWord;
+            }
+          }
+        }
+
+        if (longestMatch.length > 0) {
+          // Found a known subword piece
+          pieces.push({ text: longestMatch, type: "subword" });
+          remaining = remaining.slice(longestMatch.length);
+        } else {
+          // No known subword matched at the beginning, take just 1 single character
+          const singleChar = remaining[0];
+          pieces.push({ text: singleChar, type: "char" });
+          remaining = remaining.slice(1);
+        }
+      }
+
+      return pieces;
+    }
+
+    // Step 3: Tokenize the input test sentence and display chips
+    function tokenizeSentence() {
+      const testInput = document.getElementById("testSentence").value;
+      const words = extractWords(testInput);
+
+      const allTokens = [];
+
+      for (let i = 0; i < words.length; i++) {
+        const pieces = decomposeWord(words[i]);
+        pieces.forEach(p => {
+          // Assign an ID if this token piece doesn't have one yet
+          if (!tokenToIdMap[p.text]) {
+            tokenToIdMap[p.text] = nextTokenId++;
+          }
+          allTokens.push({
+            text: p.text,
+            type: p.type,
+            id: tokenToIdMap[p.text]
+          });
+        });
+      }
+
+      // Display the token chips
+      const chipsContainer = document.getElementById("tokenChipsContainer");
+      chipsContainer.innerHTML = "";
+
+      allTokens.forEach(tok => {
+        const chip = document.createElement("div");
+        let extraClass = "";
+        if (tok.type === "subword") extraClass = "subword";
+        else if (tok.type === "char") extraClass = "single-char";
+
+        chip.className = `token-chip ${extraClass}`;
+        chip.innerHTML = `
+          <span class="token-piece">${tok.text}</span>
+          <span class="token-id">ID: ${tok.id}</span>
+        `;
+        chipsContainer.appendChild(chip);
+      });
+
+      // Update statistics: "X words became Y tokens"
+      const stats = document.getElementById("tokenStats");
+      stats.textContent = `${words.length} words became ${allTokens.length} tokens`;
+    }
+
+
+    /* =========================================================================
+       SECTION 2: 3D EMBEDDINGS & 3D CANVAS PLOTTER
+       ========================================================================= */
+
+    // Hand-made dictionary mapping words to [Animal, Tech, Money] values (0.0 to 1.0)
+    const WORD_VECTORS = {
+      // Animals
+      "cat": [0.95, 0.05, 0.00],
+      "cats": [0.95, 0.05, 0.00],
+      "dog": [0.95, 0.05, 0.00],
+      "dogs": [0.95, 0.05, 0.00],
+      "animals": [0.90, 0.05, 0.05],
+      "animal": [0.90, 0.05, 0.05],
+      "cute": [0.80, 0.10, 0.10],
+      "runs": [0.60, 0.20, 0.10],
+
+      // Technology & Programming
+      "code": [0.05, 0.95, 0.10],
+      "codes": [0.05, 0.95, 0.10],
+      "python": [0.10, 0.90, 0.10],
+      "computers": [0.00, 0.95, 0.15],
+      "software": [0.00, 0.95, 0.10],
+      "algorithms": [0.00, 0.85, 0.35],
+      "computes": [0.00, 0.90, 0.10],
+
+      // Finance & Money
+      "finance": [0.00, 0.20, 0.95],
+      "money": [0.05, 0.10, 0.95],
+      "bank": [0.00, 0.15, 0.90],
+      "stocks": [0.00, 0.20, 0.90],
+      "invest": [0.00, 0.15, 0.85],
+
+      // Common grammatical filler words (neutral, low everywhere)
+      "the": [0.05, 0.05, 0.05],
+      "and": [0.05, 0.05, 0.05],
+      "on": [0.05, 0.05, 0.05],
+      "are": [0.05, 0.05, 0.05],
+      "sat": [0.30, 0.05, 0.05],
+      "mat": [0.20, 0.05, 0.05],
+      "chased": [0.60, 0.05, 0.05]
+    };
+
+    // Calculate the 3D embedding vector for any word or sentence
+    // Returns [x, y, z] where each is between 0.0 and 1.0
+    function calculateEmbedding(text) {
+      const words = extractWords(text);
+      if (words.length === 0) return [0.5, 0.5, 0.5];
+
+      let sumX = 0;
+      let sumY = 0;
+      let sumZ = 0;
+      let matchedCount = 0;
+
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (WORD_VECTORS[w]) {
+          sumX += WORD_VECTORS[w][0];
+          sumY += WORD_VECTORS[w][1];
+          sumZ += WORD_VECTORS[w][2];
+          matchedCount++;
+        }
+      }
+
+      // If no words matched in our dictionary, return a neutral center coordinate
+      if (matchedCount === 0) {
+        return [0.5, 0.5, 0.5];
+      }
+
+      // Sentence Vector = Average of its word vectors
+      return [
+        sumX / matchedCount,
+        sumY / matchedCount,
+        sumZ / matchedCount
+      ];
+    }
+
+    // Populate the HTML vector lookup table
+    function populateVectorTable() {
+      const tbody = document.getElementById("vectorTableBody");
+      tbody.innerHTML = "";
+
+      // List of interesting words to highlight in the table
+      const showcaseWords = [
+        "cat", "dog", "cute",
+        "code", "python", "software",
+        "finance", "money", "stocks",
+        "bank", "algorithms"
+      ];
+
+      showcaseWords.forEach(word => {
+        const vec = WORD_VECTORS[word];
+        if (vec) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><strong>${word}</strong></td>
+            <td class="num">${vec[0].toFixed(2)}</td>
+            <td class="num">${vec[1].toFixed(2)}</td>
+            <td class="num">${vec[2].toFixed(2)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+    }
+
+    /* -------------------------------------------------------------
+       3D CANVAS ENGINE (Pure JavaScript, Zero External Libraries)
+       Uses 3D perspective projection and 3D rotation matrices.
+    ------------------------------------------------------------- */
+    const canvas = document.getElementById("plot3DCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Camera Rotation angles & Zoom scale
+    let rotX = 0.45; // Pitch (rotation around X)
+    let rotY = -0.65; // Yaw (rotation around Y)
+    let zoom = 1.0;
+
+    // List of 3D data points to draw
+    // Point structure: { label: "...", x: 0.9, y: 0.1, z: 0.0, isCustom: false }
+    let plottedPoints = [];
+
+    // Parse sentences from the textarea and update the points array
+    function updatePlottedSentences() {
+      const rawText = document.getElementById("sentenceList").value;
+      const lines = rawText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+
+      // Keep any existing custom user points
+      const customPoints = plottedPoints.filter(p => p.isCustom);
+
+      plottedPoints = lines.map(line => {
+        const vec = calculateEmbedding(line);
+        return {
+          label: line,
+          x: vec[0],
+          y: vec[1],
+          z: vec[2],
+          isCustom: false
+        };
+      });
+
+      // Re-attach custom points
+      plottedPoints = plottedPoints.concat(customPoints);
+      drawScene();
+    }
+
+    // Add extra user-defined point
+    function addExtraPoint() {
+      const input = document.getElementById("extraInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const vec = calculateEmbedding(text);
+      plottedPoints.push({
+        label: text,
+        x: vec[0],
+        y: vec[1],
+        z: vec[2],
+        isCustom: true
+      });
+
+      input.value = "";
+      drawScene();
+    }
+
+    // Helper: Map 3D coordinate (x,y,z in 0..1 range) into 2D canvas screen coordinate
+    // Center of cube is at (0, 0, 0)
+    function project3D(x, y, z) {
+      // Scale from [0, 1] to [-150, 150] space
+      const boxSize = 140 * zoom;
+      let px = (x - 0.5) * 2 * boxSize;
+      let py = (0.5 - y) * 2 * boxSize; // Invert Y so up is positive
+      let pz = (z - 0.5) * 2 * boxSize;
+
+      // 1. Rotate around Y axis (Yaw)
+      const cosY = Math.cos(rotY);
+      const sinY = Math.sin(rotY);
+      const x1 = px * cosY + pz * sinY;
+      const y1 = py;
+      const z1 = -px * sinY + pz * cosY;
+
+      // 2. Rotate around X axis (Pitch)
+      const cosX = Math.cos(rotX);
+      const sinX = Math.sin(rotX);
+      const x2 = x1;
+      const y2 = y1 * cosX - z1 * sinX;
+      const z2 = y1 * sinX + z1 * cosX;
+
+      // 3. Perspective Projection
+      const cameraDistance = 450;
+      const perspective = cameraDistance / (cameraDistance + z2);
+
+      const screenX = canvas.width / 2 + x2 * perspective;
+      const screenY = canvas.height / 2 + y2 * perspective;
+
+      return {
+        screenX: screenX,
+        screenY: screenY,
+        depth: z2,
+        scale: perspective
+      };
+    }
+
+    // Determine the dominant color of a point based on its vector components
+    function getPointColor(p) {
+      if (p.isCustom) return "#fbbf24"; // Bright amber for user custom point
+      if (p.x >= p.y && p.x >= p.z) return "#f87171"; // Animal dominant (Red)
+      if (p.y >= p.x && p.y >= p.z) return "#38bdf8"; // Tech dominant (Cyan)
+      return "#34d399"; // Finance dominant (Green)
+    }
+
+    // Main 3D render loop
+    function drawScene() {
+      // Handle high-DPI crisp canvas rendering
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+
+      // Clear background
+      ctx.fillStyle = "#080d1a";
+      ctx.fillRect(0, 0, width, height);
+
+      // Draw subtle grid floor at Z = 0
+      ctx.strokeStyle = "rgba(51, 65, 85, 0.4)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const step = i / 5;
+        // Lines parallel to X
+        const p1 = project3D(0, 0, step);
+        const p2 = project3D(1, 0, step);
+        ctx.beginPath();
+        ctx.moveTo(p1.screenX / dpr, p1.screenY / dpr);
+        ctx.lineTo(p2.screenX / dpr, p2.screenY / dpr);
+        ctx.stroke();
+
+        // Lines parallel to Z
+        const p3 = project3D(step, 0, 0);
+        const p4 = project3D(step, 0, 1);
+        ctx.beginPath();
+        ctx.moveTo(p3.screenX / dpr, p3.screenY / dpr);
+        ctx.lineTo(p4.screenX / dpr, p4.screenY / dpr);
+        ctx.stroke();
+      }
+
+      // Draw 3 Main Coordinate Axes:
+      // Origin: (0, 0, 0)
+      const origin = project3D(0, 0, 0);
+      const axisX = project3D(1.15, 0, 0); // Animal Axis (Red)
+      const axisY = project3D(0, 1.15, 0); // Tech Axis (Cyan)
+      const axisZ = project3D(0, 0, 1.15); // Finance Axis (Green)
+
+      function drawAxisLine(start, end, color, labelText) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(start.screenX / dpr, start.screenY / dpr);
+        ctx.lineTo(end.screenX / dpr, end.screenY / dpr);
+        ctx.stroke();
+
+        // Axis Label text
+        ctx.fillStyle = color;
+        ctx.font = "bold 12px sans-serif";
+        ctx.fillText(labelText, (end.screenX / dpr) + 6, (end.screenY / dpr) + 4);
+      }
+
+      drawAxisLine(origin, axisX, "#f87171", "X: Animal");
+      drawAxisLine(origin, axisY, "#38bdf8", "Y: Tech");
+      drawAxisLine(origin, axisZ, "#34d399", "Z: Money");
+
+      // Draw dashed reference cube wireframe
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.15)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+
+      const corners = [
+        [0, 1, 0], [1, 1, 0], [1, 0, 0], [0, 0, 0],
+        [0, 1, 1], [1, 1, 1], [1, 0, 1], [0, 0, 1]
+      ];
+      const edges = [
+        [0,1],[1,2],[2,3],[3,0], // back face
+        [4,5],[5,6],[6,7],[7,4], // front face
+        [0,4],[1,5],[2,6],[3,7]  // connecting edges
+      ];
+
+      edges.forEach(edge => {
+        const c1 = project3D(...corners[edge[0]]);
+        const c2 = project3D(...corners[edge[1]]);
+        ctx.beginPath();
+        ctx.moveTo(c1.screenX / dpr, c1.screenY / dpr);
+        ctx.lineTo(c2.screenX / dpr, c2.screenY / dpr);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]); // Reset dashed line
+
+      // Sort points by camera depth so closer points draw over farther ones
+      const projected = plottedPoints.map(p => {
+        const proj = project3D(p.x, p.y, p.z);
+        return {
+          point: p,
+          screenX: proj.screenX / dpr,
+          screenY: proj.screenY / dpr,
+          depth: proj.depth,
+          scale: proj.scale
+        };
+      });
+      projected.sort((a, b) => b.depth - a.depth);
+
+      // Render each point and its stem to the floor
+      projected.forEach(item => {
+        const p = item.point;
+        const color = getPointColor(p);
+
+        // Draw drop line down to the floor (X, 0, Z) for 3D depth perception
+        const floorProj = project3D(p.x, 0, p.z);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(item.screenX, item.screenY);
+        ctx.lineTo(floorProj.screenX / dpr, floorProj.screenY / dpr);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Small dot on floor shadow
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.beginPath();
+        ctx.arc(floorProj.screenX / dpr, floorProj.screenY / dpr, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw glowing outer halo for points
+        const radius = Math.max(4, 6 * item.scale);
+        const grad = ctx.createRadialGradient(
+          item.screenX, item.screenY, radius * 0.4,
+          item.screenX, item.screenY, radius * 2.2
+        );
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(item.screenX, item.screenY, radius * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Solid center circle
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(item.screenX, item.screenY, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Text label badge next to the point
+        ctx.font = "11px -apple-system, sans-serif";
+        const labelText = p.label.length > 28 ? p.label.slice(0, 26) + "..." : p.label;
+        const textWidth = ctx.measureText(labelText).width;
+
+        // Label background pill
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        const boxX = item.screenX + radius + 6;
+        const boxY = item.screenY - 10;
+        ctx.fillRect(boxX, boxY, textWidth + 10, 18);
+        ctx.strokeRect(boxX, boxY, textWidth + 10, 18);
+
+        // Label text
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(labelText, boxX + 5, boxY + 13);
+      });
+    }
+
+    /* -------------------------------------------------------------
+       MOUSE & TOUCH INTERACTION FOR 3D ROTATION & ZOOM
+    ------------------------------------------------------------- */
+    let isDragging = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+
+    canvas.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - prevMouseX;
+      const deltaY = e.clientY - prevMouseY;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+
+      // Adjust rotation angles based on mouse movement speed
+      rotY += deltaX * 0.008;
+      rotX += deltaY * 0.008;
+
+      // Clamp vertical pitch so user cannot completely flip the cube upside down
+      rotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, rotX));
+
+      drawScene();
+    });
+
+    // Touch support for mobile devices
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        prevMouseX = e.touches[0].clientX;
+        prevMouseY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      isDragging = false;
+    });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const deltaX = e.touches[0].clientX - prevMouseX;
+      const deltaY = e.touches[0].clientY - prevMouseY;
+      prevMouseX = e.touches[0].clientX;
+      prevMouseY = e.touches[0].clientY;
+
+      rotY += deltaX * 0.008;
+      rotX += deltaY * 0.008;
+      rotX = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, rotX));
+
+      drawScene();
+    }, { passive: true });
+
+    // Mouse wheel zoom
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
+      zoom = Math.max(0.6, Math.min(2.0, zoom * zoomFactor));
+      drawScene();
+    }, { passive: false });
+
+    // Responsive Canvas Resizing on window resize
+    window.addEventListener("resize", () => {
+      drawScene();
+    });
+
+    /* -------------------------------------------------------------
+       INITIALIZATION & EVENT BINDINGS
+    ------------------------------------------------------------- */
+    function init() {
+      // Bind Section 1 buttons and sliders
+      document.getElementById("btnBuildVocab").addEventListener("click", buildVocabulary);
+      document.getElementById("vocabSlider").addEventListener("input", updateVocabFromSlider);
+      document.getElementById("btnTokenize").addEventListener("click", tokenizeSentence);
+      document.getElementById("testSentence").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") tokenizeSentence();
+      });
+
+      // Bind Section 2 buttons
+      document.getElementById("btnPlotSentences").addEventListener("click", updatePlottedSentences);
+      document.getElementById("btnAddExtra").addEventListener("click", addExtraPoint);
+      document.getElementById("extraInput").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") addExtraPoint();
+      });
+
+      // Populate vector table & run initial calculations
+      populateVectorTable();
+      buildVocabulary();
+      updatePlottedSentences();
+    }
+
+    // Run when DOM is ready
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
+
